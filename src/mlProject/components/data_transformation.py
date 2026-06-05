@@ -17,7 +17,15 @@ class DataTransformation:
 
 
     def train_test_spliting(self):
-        data = pd.read_csv(self.config.data_path)
+        try:
+            data = pd.read_csv(self.config.data_path)
+        except FileNotFoundError:
+            logger.error(f"Data file not found: {self.config.data_path}")
+            raise
+        except Exception as e:
+            logger.exception(f"Failed to read data file: {self.config.data_path}")
+            raise
+
         stratify = None
         if self.config.stratify_column:
             if self.config.stratify_column not in data.columns:
@@ -36,6 +44,7 @@ class DataTransformation:
             )
         except ValueError as exc:
             if stratify is None:
+                logger.exception("train_test_split failed")
                 raise
             logger.warning(
                 "Falling back to non-stratified split because '%s' cannot be "
@@ -49,8 +58,12 @@ class DataTransformation:
                 random_state=self.config.random_state,
             )
 
-        train.to_csv(os.path.join(self.config.root_dir, "train.csv"),index = False)
-        test.to_csv(os.path.join(self.config.root_dir, "test.csv"),index = False)
+        try:
+            train.to_csv(os.path.join(self.config.root_dir, "train.csv"), index=False)
+            test.to_csv(os.path.join(self.config.root_dir, "test.csv"), index=False)
+        except OSError as e:
+            logger.error(f"Failed to write train/test CSV files: {e}")
+            raise
 
         logger.info("Splited data into training and test sets")
         logger.info(train.shape)

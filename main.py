@@ -5,7 +5,7 @@ from mlProject.pipeline.stage_03_data_transformation import DataTransformationTr
 from mlProject.pipeline.stage_04_model_trainer import ModelTrainerPipeline
 from mlProject.pipeline.stage_05_model_evaluation import ModelEvaluationPipeline
 
-STAGE_NAME = "Data Ingestion Stage "
+STAGE_NAME = "Data Ingestion Stage"
 
 try:
     logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
@@ -13,11 +13,11 @@ try:
     data_ingestion.main()
     logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
 except Exception as e:
-    logger.exception(e)
-    raise e
+    logger.exception(f"Stage '{STAGE_NAME}' failed: {e}")
+    raise
 
 
-STAGE_NAME="Data Validation Stage "
+STAGE_NAME="Data Validation Stage"
 
 try:
     logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
@@ -25,10 +25,10 @@ try:
     data_validation.main()
     logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
 except Exception as e:
-    logger.exception(e)
-    raise e
+    logger.exception(f"Stage '{STAGE_NAME}' failed: {e}")
+    raise
 
-STAGE_NAME = "Data Transformation Stage "
+STAGE_NAME = "Data Transformation Stage"
 
 try:
     logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
@@ -36,10 +36,10 @@ try:
     data_transformation.main()
     logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
 except Exception as e:
-    logger.exception(e)
-    raise e
+    logger.exception(f"Stage '{STAGE_NAME}' failed: {e}")
+    raise
     
-STAGE_NAME = "Model Trainer Stage "
+STAGE_NAME = "Model Trainer Stage"
 
 try:
     logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
@@ -47,10 +47,10 @@ try:
     model_trainer.main()
     logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
 except Exception as e:
-    logger.exception(e)
-    raise e
+    logger.exception(f"Stage '{STAGE_NAME}' failed: {e}")
+    raise
 
-STAGE_NAME = "Model Evaluation Stage "
+STAGE_NAME = "Model Evaluation Stage"
 
 try:
     logger.info(f">>>>>> stage {STAGE_NAME} started <<<<<<")
@@ -58,5 +58,5 @@ try:
     model_evaluation.main()
     logger.info(f">>>>>> stage {STAGE_NAME} completed <<<<<<\n\nx==========x")
 except Exception as e:
-    logger.exception(e)
-    raise e
+    logger.exception(f"Stage '{STAGE_NAME}' failed: {e}")
+    raise

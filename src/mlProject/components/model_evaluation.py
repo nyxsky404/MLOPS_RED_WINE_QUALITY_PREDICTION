@@ -23,17 +23,34 @@ class ModelEvaluation:
 
 
     def save_results(self):
+        try:
+            test_data = pd.read_csv(self.config.test_data_path)
+        except FileNotFoundError:
+            logger.error(f"Test data file not found: {self.config.test_data_path}")
+            raise
+        except Exception as e:
+            logger.exception("Failed to load test data")
+            raise
 
-        test_data = pd.read_csv(self.config.test_data_path)
-        model = joblib.load(self.config.model_path)
+        try:
+            model = joblib.load(self.config.model_path)
+        except FileNotFoundError:
+            logger.error(f"Model file not found: {self.config.model_path}")
+            raise
+        except Exception as e:
+            logger.exception("Failed to load model")
+            raise
 
         test_x = test_data.drop([self.config.target_column], axis=1)
         test_y = test_data[[self.config.target_column]]
         
-        predicted_qualities = model.predict(test_x)
+        try:
+            predicted_qualities = model.predict(test_x)
+        except Exception as e:
+            logger.exception("Model prediction failed")
+            raise
 
         (rmse, mae, r2) = self.eval_metrics(test_y, predicted_qualities)
         
-        # Saving metrics as local
         scores = {"rmse": rmse, "mae": mae, "r2": r2}
         save_json(path=Path(self.config.metric_file_name), data=scores)
