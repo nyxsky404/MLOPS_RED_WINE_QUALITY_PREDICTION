@@ -5,6 +5,9 @@ DataTransformation:
   test_size: 0.25
   random_state: 42
   stratify_column: quality
+  feature_scaling:
+    method: standard
+    save_scaler_path: artifacts/data_transformation/scaler.joblib
 
 ElasticNet:
   alpha: 0.2

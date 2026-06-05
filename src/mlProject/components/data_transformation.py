@@ -1,8 +1,40 @@
 import os
+import joblib
 from mlProject import logger
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 import pandas as pd
 from mlProject.entity.config_entity import DataTransformationConfig
+
+
+NUMERIC_FEATURES = [
+    "fixed acidity", "volatile acidity", "citric acid",
+    "residual sugar", "chlorides", "free sulfur dioxide",
+    "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",
+]
+
+
+class FeatureScaler:
+    def __init__(self, save_path: str):
+        self.save_path = save_path
+        self.pipeline = Pipeline([
+            ("scaler", StandardScaler()),
+        ])
+
+    def fit_transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        scaled = self.pipeline.fit_transform(X[NUMERIC_FEATURES])
+        result = X.copy()
+        result[NUMERIC_FEATURES] = scaled
+        joblib.dump(self.pipeline, self.save_path)
+        logger.info(f"Feature scaler saved to {self.save_path}")
+        return result
+
+    def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        scaled = self.pipeline.transform(X[NUMERIC_FEATURES])
+        result = X.copy()
+        result[NUMERIC_FEATURES] = scaled
+        return result
 
 
 class DataTransformation:
@@ -57,6 +89,11 @@ class DataTransformation:
                 test_size=self.config.test_size,
                 random_state=self.config.random_state,
             )
+
+        scaler_save_path = os.path.join(self.config.root_dir, "scaler.joblib")
+        scaler = FeatureScaler(scaler_save_path)
+        train = scaler.fit_transform(train)
+        test = scaler.transform(test)
 
         try:
             train.to_csv(os.path.join(self.config.root_dir, "train.csv"), index=False)
