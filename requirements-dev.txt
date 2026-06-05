@@ -1,0 +1,6 @@
+-r requirements.txt
+
+ipykernel==6.23.1
+types-PyYAML==6.0.12.10
+
+-e .

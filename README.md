@@ -68,6 +68,13 @@ conda activate wineqp
 **Install dependencies**
 ```bash
 pip install -r requirements.txt
+pip install -e .
+```
+
+For notebook/type-checking tools used during development, install:
+
+```bash
+pip install -r requirements-dev.txt
 ```
 
 **Initialize DVC once per clone**

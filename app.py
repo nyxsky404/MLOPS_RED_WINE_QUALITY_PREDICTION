@@ -23,9 +23,6 @@ def ensure_model_trained():
     else:
         print("✅ Model already exists, ready for predictions!")
 
-# Auto-train on startup
-print("🚀 Starting Wine Quality Prediction App...")
-ensure_model_trained()
 
 
 @app.route('/',methods=['GET'])  # route to display the home page
@@ -89,4 +86,6 @@ def index():
 
 
 if __name__ == "__main__":
+    print("Starting Wine Quality Prediction App...")
+    ensure_model_trained()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8080)), debug=True)
