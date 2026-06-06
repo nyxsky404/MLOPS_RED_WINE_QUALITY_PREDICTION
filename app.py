@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from mlProject.pipeline.prediction import PredictionPipeline
+from mlProject.utils.model_registry import load_registry, rollback_to_version
 from pathlib import Path
 import subprocess
 import threading
@@ -120,6 +121,52 @@ def index():
 
     else:
         return render_template('index.html')
+
+
+@app.route('/models', methods=['GET'])
+def list_models():
+    """List all registered model versions."""
+    registry_path = Path('artifacts/model_registry.json')
+    registry = load_registry(registry_path)
+    return jsonify(registry)
+
+
+@app.route('/models/compare', methods=['GET'])
+def compare_models():
+    """Show metric diff between current and previous model."""
+    comparison_path = Path('artifacts/model_evaluation/metrics_comparison.json')
+    if comparison_path.exists():
+        try:
+            with open(comparison_path) as f:
+                import json
+                comparison = json.load(f)
+            return jsonify(comparison)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"message": "No comparison data available"})
+
+
+@app.route('/models/rollback', methods=['POST'])
+def rollback_model():
+    """Rollback production alias to a specified version."""
+    version_id = request.json.get("version_id")
+    if not version_id:
+        return jsonify({"error": "version_id is required"}), 400
+    registry_path = Path('artifacts/model_registry.json')
+    if rollback_to_version(registry_path, version_id):
+        return jsonify({"message": f"Rolled back to version {version_id}"})
+    return jsonify({"error": f"Version {version_id} not found"}), 404
+
+
+@app.route('/models/<version_id>', methods=['GET'])
+def get_model_version(version_id):
+    """View metadata for a specific version."""
+    registry_path = Path('artifacts/model_registry.json')
+    registry = load_registry(registry_path)
+    for v in registry.get("versions", []):
+        if v.get("id") == version_id:
+            return jsonify(v)
+    return jsonify({"error": f"Version {version_id} not found"}), 404
 
 
 if __name__ == "__main__":

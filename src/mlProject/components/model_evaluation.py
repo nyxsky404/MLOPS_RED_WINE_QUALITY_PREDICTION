@@ -4,8 +4,10 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from urllib.parse import urlparse
 import numpy as np
 import joblib
+from mlProject import logger
 from mlProject.entity.config_entity import ModelEvaluationConfig
 from mlProject.utils.common import save_json
+from mlProject.utils.model_registry import load_registry, save_registry
 from pathlib import Path
 
 
@@ -54,3 +56,44 @@ class ModelEvaluation:
         
         scores = {"rmse": rmse, "mae": mae, "r2": r2}
         save_json(path=Path(self.config.metric_file_name), data=scores)
+
+        registry_path = self.config.root_dir.parent / "model_registry.json"
+        self._update_registry_with_metrics(registry_path, scores)
+
+        previous_metrics = self._load_previous_metrics(registry_path)
+        if previous_metrics:
+            comparison = self._compare_metrics(scores, previous_metrics)
+            comparison_path = self.config.root_dir / "metrics_comparison.json"
+            save_json(path=Path(comparison_path), data=comparison)
+            logger.info(f"Metrics comparison saved to {comparison_path}")
+
+    def _load_previous_metrics(self, registry_path: Path):
+        """Load metrics from the previous production model."""
+        registry = load_registry(registry_path)
+        production_id = registry.get("production")
+        if not production_id:
+            return None
+        for v in registry.get("versions", []):
+            if v.get("id") == production_id and v.get("metrics"):
+                return v["metrics"]
+        return None
+
+    def _compare_metrics(self, current: dict, previous: dict) -> dict:
+        """Compare current metrics against previous."""
+        comparison = {"current": current, "previous": previous, "changes": {}}
+        for key in current:
+            if key in previous and previous[key] != 0:
+                pct_change = ((current[key] - previous[key]) / abs(previous[key])) * 100
+                comparison["changes"][key] = round(pct_change, 2)
+        return comparison
+
+    def _update_registry_with_metrics(self, registry_path: Path, metrics: dict):
+        """Update the latest model version in the registry with computed metrics."""
+        try:
+            registry = load_registry(registry_path)
+            if registry["versions"]:
+                registry["versions"][0]["metrics"] = metrics
+                save_registry(registry_path, registry)
+                logger.info(f"Updated registry with metrics: {metrics}")
+        except Exception as e:
+            logger.warning(f"Could not update registry with metrics: {e}")

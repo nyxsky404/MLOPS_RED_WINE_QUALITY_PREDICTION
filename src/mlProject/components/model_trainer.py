@@ -3,7 +3,11 @@ import os
 from mlProject import logger
 from sklearn.linear_model import ElasticNet
 import joblib
+from pathlib import Path
 from mlProject.entity.config_entity import ModelTrainerConfig
+from mlProject.utils.model_registry import (
+    get_version_id, compute_file_hash, register_model,
+)
 
 class ModelTrainer:
     def __init__(self, config: ModelTrainerConfig):
@@ -21,12 +25,10 @@ class ModelTrainer:
             logger.exception("Failed to load training data")
             raise
 
-
         train_x = train_data.drop([self.config.target_column], axis=1)
         test_x = test_data.drop([self.config.target_column], axis=1)
         train_y = train_data[[self.config.target_column]]
         test_y = test_data[[self.config.target_column]]
-
 
         try:
             lr = ElasticNet(alpha=self.config.alpha, l1_ratio=self.config.l1_ratio, random_state=42)
@@ -35,10 +37,43 @@ class ModelTrainer:
             logger.exception("Failed to train model")
             raise
 
+        version_id = get_version_id()
+        model_filename = f"model_{version_id}.joblib"
+        model_path_str = os.path.join(self.config.root_dir, model_filename)
         try:
-            joblib.dump(lr, os.path.join(self.config.root_dir, self.config.model_name))
+            joblib.dump(lr, model_path_str)
         except Exception as e:
-            logger.exception(f"Failed to save model to {self.config.model_name}")
+            logger.exception(f"Failed to save model to {model_path_str}")
             raise
+
+        model_path = Path(model_path_str)
+        data_hash = None
+        try:
+            data_hash = compute_file_hash(Path(self.config.train_data_path))
+        except Exception as e:
+            logger.warning(f"Could not compute data hash: {e}")
+
+        params = {
+            "alpha": self.config.alpha,
+            "l1_ratio": self.config.l1_ratio,
+        }
+
+        registry_path = Path(self.config.root_dir).parent / "model_registry.json"
+        try:
+            register_model(
+                registry_path=registry_path,
+                model_path=model_path,
+                version_id=version_id,
+                metrics={},
+                params=params,
+                data_hash=data_hash,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to register model in registry: {e}")
+
+        stable_path = os.path.join(self.config.root_dir, self.config.model_name)
+        joblib.dump(lr, stable_path)
+
+        logger.info(f"Model {version_id} trained and saved to {stable_path}")
 
         

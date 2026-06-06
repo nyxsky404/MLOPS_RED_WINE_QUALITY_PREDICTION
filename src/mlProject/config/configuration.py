@@ -6,7 +6,8 @@ from mlProject.entity.config_entity import (DataIngestionConfig,
                                             DataValidationConfig,
                                             DataTransformationConfig,
                                             ModelTrainerConfig,
-                                            ModelEvaluationConfig)
+                                            ModelEvaluationConfig,
+                                            ModelRegistryConfig)
 
 
 class ConfigurationManager:
@@ -122,3 +123,13 @@ class ConfigurationManager:
         )
 
         return model_evaluation_config
+
+    def get_model_registry_config(self) -> ModelRegistryConfig:
+        registry_config = self.config.get("model_registry", {})
+        return ModelRegistryConfig(
+            registry_path=Path(registry_config.get("registry_path", "artifacts/model_registry.json")),
+            production_alias=registry_config.get("production_alias", "production"),
+            staging_alias=registry_config.get("staging_alias", "staging"),
+            max_versions_to_keep=int(registry_config.get("max_versions_to_keep", 10)),
+            quality_gate_max_rmse_degradation_pct=float(registry_config.get("quality_gate_max_rmse_degradation_pct", 5.0)),
+        )

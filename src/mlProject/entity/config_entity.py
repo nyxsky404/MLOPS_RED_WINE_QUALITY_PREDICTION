@@ -44,3 +44,11 @@ class ModelEvaluationConfig:
     all_params: dict
     metric_file_name: Path
     target_column: str
+
+@dataclass(frozen=True)
+class ModelRegistryConfig:
+    registry_path: Path
+    production_alias: str = "production"
+    staging_alias: str = "staging"
+    max_versions_to_keep: int = 10
+    quality_gate_max_rmse_degradation_pct: float = 5.0
