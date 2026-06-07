@@ -25,8 +25,7 @@ jobs:
         
     - name: Run tests
       run: |
-        # Add your test commands here when you have tests
-        echo "Tests would run here"
+        python -m pytest tests/ -v
         
   deploy:
     needs: test

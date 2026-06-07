@@ -12,8 +12,8 @@ class ModelEvaluationPipeline:
     def main(self):
         config = ConfigurationManager()
         model_evaluation_config = config.get_model_evaluation_config()
-        model_evaluation_config = ModelEvaluation(config=model_evaluation_config)
-        model_evaluation_config.save_results()
+        model_evaluator = ModelEvaluation(config=model_evaluation_config)
+        model_evaluator.save_results()
 
 
 if __name__ == "__main__":
