@@ -35,7 +35,12 @@ class ModelEvaluation:
             raise
 
         try:
-            model = joblib.load(self.config.model_path)
+            from mlProject.utils.common import verify_model_integrity
+            model_path = self.config.model_path
+            checksum_path = Path(str(model_path) + ".sha256")
+            if not verify_model_integrity(model_path, checksum_path):
+                raise ValueError(f"Model integrity check failed for {model_path}")
+            model = joblib.load(model_path)
         except FileNotFoundError:
             logger.error(f"Model file not found: {self.config.model_path}")
             raise

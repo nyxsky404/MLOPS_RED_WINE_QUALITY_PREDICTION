@@ -27,6 +27,10 @@ class PredictionPipeline:
     def predict(self, data):
         if self.model is None:
             model_path = self._model_path or Path('artifacts/model_trainer/model.joblib')
+            from mlProject.utils.common import verify_model_integrity
+            checksum_path = Path(str(model_path) + ".sha256")
+            if not verify_model_integrity(model_path, checksum_path):
+                raise ValueError(f"Model integrity check failed for {model_path}")
             self.model = joblib.load(model_path)
         if self.preprocessor is None:
             preprocessor_path = Path('artifacts/data_transformation/preprocessor.joblib')

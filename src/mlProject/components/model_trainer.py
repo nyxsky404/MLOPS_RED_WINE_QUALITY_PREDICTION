@@ -43,6 +43,9 @@ class ModelTrainer:
         model_path_str = os.path.join(self.config.root_dir, model_filename)
         try:
             joblib.dump(lr, model_path_str)
+            checksum_path = model_path_str + ".sha256"
+            from mlProject.utils.common import save_checksum
+            save_checksum(Path(model_path_str), Path(checksum_path))
         except Exception as e:
             logger.exception(f"Failed to save model to {model_path_str}")
             raise

@@ -134,7 +134,7 @@ def ensure_model_trained() -> None:
         model_path = eval_config.model_path
     except Exception:
         model_path = Path("artifacts/model_trainer/model.joblib")
- 
+
     if not model_path.exists():
         print("Model not found - starting automatic training...")
         try:
@@ -150,7 +150,12 @@ def ensure_model_trained() -> None:
         except Exception as exc:
             print(f"Auto-training failed: {exc}")
     else:
-        print("Model already exists - ready for predictions!")
+        from mlProject.utils.common import verify_model_integrity
+        checksum_path = Path(str(model_path) + ".sha256")
+        if not verify_model_integrity(model_path, checksum_path):
+            print("Model integrity check FAILED - consider retraining.")
+        else:
+            print("Model already exists - ready for predictions!")
  
  
 # ---------------------------------------------------------------------------
