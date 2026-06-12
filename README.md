@@ -229,6 +229,14 @@ Metrics are automatically saved in `artifacts/model_evaluation/metrics.json`
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+## Contributors
+
+<!-- CONTRIBUTORS_START -->
+
+
+<!-- CONTRIBUTORS_END -->
+
+
 ## 📜 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
