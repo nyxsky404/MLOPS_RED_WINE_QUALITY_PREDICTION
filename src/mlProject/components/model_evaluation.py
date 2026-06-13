@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 import numpy as np
 import joblib
 from mlProject import logger
+from mlProject.config.configuration import ConfigurationManager
 from mlProject.entity.config_entity import ModelEvaluationConfig
 from mlProject.utils.common import save_json
 from mlProject.utils.model_registry import (
@@ -127,7 +128,10 @@ class ModelEvaluation:
 
         logger.info(f"Evaluation metrics saved: RMSE={rmse:.4f}, MAE={mae:.4f}, R2={r2:.4f}, Baseline R2={baseline_r2:.4f}")
 
-        registry_path = self.config.root_dir.parent / "model_registry.json"
+        config_manager = ConfigurationManager()
+        registry_config = config_manager.get_model_registry_config()
+        registry_path = registry_config.registry_path
+        quality_gate = registry_config.quality_gate_max_rmse_degradation_pct
 
         params = model_info.get("params", {})
         data_hash = model_info.get("data_hash", "")
@@ -136,6 +140,9 @@ class ModelEvaluation:
             registry_path=registry_path,
             version_id=version_id,
             metrics=scores,
+            params=params,
+            data_hash=data_hash,
+            quality_gate_max_rmse_degradation_pct=quality_gate,
             status="evaluated",
             model_path=versioned_model_path,
         )
@@ -147,6 +154,7 @@ class ModelEvaluation:
                 metrics=scores,
                 params=params,
                 data_hash=data_hash,
+                quality_gate_max_rmse_degradation_pct=quality_gate,
             )
 
         previous_metrics = self._load_previous_metrics(registry_path)
