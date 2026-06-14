@@ -5,7 +5,7 @@ from pathlib import Path
 from mlProject.components.data_transformation import NUMERIC_FEATURES
 from mlProject.config.configuration import ConfigurationManager
 from mlProject.utils.common import load_env_file
-from mlProject.utils.model_registry import get_production_model_path, load_registry
+from mlProject.utils.model_registry import get_production_model_path
 from mlProject import logger
 
 class PredictionPipeline:
@@ -18,8 +18,10 @@ class PredictionPipeline:
             try:
                 config_manager = ConfigurationManager()
                 registry_config = config_manager.get_model_registry_config()
-                self._model_path = registry_config.registry_path.parent / "model.joblib"
-                if not self._model_path.exists():
+                prod_path = get_production_model_path(registry_config.registry_path)
+                if prod_path is not None and prod_path.exists():
+                    self._model_path = prod_path
+                else:
                     model_eval_config = config_manager.get_model_evaluation_config()
                     self._model_path = model_eval_config.model_path
             except Exception:
