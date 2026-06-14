@@ -159,8 +159,11 @@ def update_registration(
     metrics: dict = None,
     status: str = None,
     model_path: Path = None,
+    params: dict = None,
+    data_hash: str = None,
+    quality_gate_max_rmse_degradation_pct: float = None,
 ) -> bool:
-    """Update an existing registry entry's metrics, status, and/or model path."""
+    """Update an existing registry entry's metrics, status, model path, params, and/or data hash."""
     registry = load_registry(registry_path)
     for v in registry.get("versions", []):
         if v.get("id") == version_id:
@@ -170,6 +173,12 @@ def update_registration(
                 v["status"] = status
             if model_path is not None:
                 v["path"] = str(model_path)
+            if params is not None:
+                v["params"] = params
+            if data_hash is not None:
+                v["data_hash"] = data_hash
+            if quality_gate_max_rmse_degradation_pct is not None:
+                v["quality_gate_max_rmse_degradation_pct"] = quality_gate_max_rmse_degradation_pct
             v["updated_at"] = datetime.now(timezone.utc).isoformat()
             save_registry(registry_path, registry)
             logger.info(f"Updated registration for version {version_id}: metrics={metrics is not None}, status={status}")
