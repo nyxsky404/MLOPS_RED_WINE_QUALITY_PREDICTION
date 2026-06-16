@@ -210,8 +210,11 @@ def verify_model_integrity(model_path: Path, checksum_path: Path) -> bool:
         logger.error(f"Model file not found: {model_path}")
         return False
     if not checksum_path.exists():
-        logger.warning(f"No checksum file found at {checksum_path} - skipping verification")
-        return True
+        logger.error(
+            f"Checksum file missing at {checksum_path} — "
+            f"cannot verify model integrity"
+        )
+        return False
     expected = checksum_path.read_text().strip()
     actual = compute_checksum(model_path)
     if expected != actual:
