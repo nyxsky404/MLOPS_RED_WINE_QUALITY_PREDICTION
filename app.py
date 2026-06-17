@@ -424,6 +424,30 @@ def index():
             sulphates            = float(request.form["sulphates"])
             alcohol              = float(request.form["alcohol"])
 
+            # Boundary validation checks
+            if fixed_acidity <= 0:
+                raise ValueError("Fixed Acidity must be positive.")
+            if volatile_acidity <= 0:
+                raise ValueError("Volatile Acidity must be positive.")
+            if citric_acid < 0:
+                raise ValueError("Citric Acid must be non-negative.")
+            if residual_sugar <= 0:
+                raise ValueError("Residual Sugar must be positive.")
+            if chlorides < 0:
+                raise ValueError("Chlorides must be non-negative.")
+            if free_sulfur_dioxide < 0:
+                raise ValueError("Free Sulfur Dioxide must be non-negative.")
+            if total_sulfur_dioxide < 0:
+                raise ValueError("Total Sulfur Dioxide must be non-negative.")
+            if density <= 0:
+                raise ValueError("Density must be positive.")
+            if not (0 < pH < 14):
+                raise ValueError("pH must be between 0 and 14.")
+            if sulphates < 0:
+                raise ValueError("Sulphates must be non-negative.")
+            if alcohol <= 0:
+                raise ValueError("Alcohol must be positive.")
+
             data = np.array([
                 fixed_acidity, volatile_acidity, citric_acid, residual_sugar,
                 chlorides, free_sulfur_dioxide, total_sulfur_dioxide,
@@ -439,10 +463,7 @@ def index():
             logger.error(f"Validation error in /predict: {exc}")
             return render_template(
                 "results.html",
-                error_msg=(
-                    "Unable to compute prediction. "
-                    "Please ensure all fields are filled with valid numbers."
-                ),
+                error_msg=f"Validation error: {exc}",
             ), 400
         except Exception as exc:
             logger.error(f"Unexpected error in /predict: {exc}")
