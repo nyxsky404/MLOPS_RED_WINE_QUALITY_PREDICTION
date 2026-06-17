@@ -28,6 +28,7 @@ import threading
 import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 import portalocker
@@ -539,6 +540,44 @@ def get_model_version(version_id):
             return jsonify(v)
     log_admin_action("get_model_version", f"version_{version_id}_not_found")
     return jsonify({"error": f"Version {version_id} not found"}), 404
+
+
+@app.route('/mlflow', methods=['GET'])
+def mlflow_ui():
+    """Redirect to MLflow Tracking UI if configured."""
+    try:
+        config_manager = ConfigurationManager()
+        registry_config = config_manager.get_model_registry_config()
+        if not registry_config.use_mlflow:
+            return jsonify({
+                "message": "MLflow is not enabled. Set use_mlflow: true in config.yaml or ENV_MLFLOW_USE_MLFLOW=true.",
+                "enabled": False,
+            })
+        tracking_uri = registry_config.mlflow_tracking_uri
+        parsed = urlparse(tracking_uri)
+        is_local = parsed.scheme == "" or parsed.scheme == "file"
+        if is_local:
+            return jsonify({
+                "message": "MLflow tracking URI is local. Run 'mlflow ui' in your terminal, then visit http://localhost:5000.",
+                "enabled": True,
+                "tracking_uri": tracking_uri,
+                "mlflow_ui_command": "mlflow ui",
+                "local_ui_url": "http://localhost:5000",
+                "experiment_name": registry_config.mlflow_experiment_name,
+                "model_name": registry_config.mlflow_model_name,
+            })
+        return jsonify({
+            "message": "MLflow Tracking Server configured",
+            "enabled": True,
+            "tracking_uri": tracking_uri,
+            "experiment_name": registry_config.mlflow_experiment_name,
+            "model_name": registry_config.mlflow_model_name,
+        })
+    except Exception as e:
+        return jsonify({
+            "message": f"Failed to read MLflow configuration: {str(e)}",
+            "enabled": False,
+        }), 500
 
 
 # ---------------------------------------------------------------------------

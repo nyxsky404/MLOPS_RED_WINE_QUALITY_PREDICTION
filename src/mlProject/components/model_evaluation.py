@@ -13,6 +13,7 @@ from mlProject.utils.common import save_json, save_checksum
 from mlProject.utils.model_registry import (
     load_registry, register_model, update_registration,
 )
+from mlProject.utils.mlflow_tracker import MlflowTracker
 from mlProject.components.data_transformation import NUMERIC_FEATURES
 from pathlib import Path
 
@@ -171,6 +172,55 @@ class ModelEvaluation:
             comparison_path = self.config.root_dir / "metrics_comparison.json"
             save_json(path=Path(comparison_path), data=comparison)
             logger.info(f"Metrics comparison saved to {comparison_path}")
+
+        self._log_metrics_to_mlflow(scores, version_id)
+
+    def _log_metrics_to_mlflow(self, scores: dict, version_id: str):
+        try:
+            config_manager = ConfigurationManager()
+            registry_config = config_manager.get_model_registry_config()
+            if not registry_config.use_mlflow:
+                return
+            tracker = MlflowTracker(
+                tracking_uri=registry_config.mlflow_tracking_uri,
+                experiment_name=registry_config.mlflow_experiment_name,
+                use_mlflow=True,
+                registry_uri=registry_config.mlflow_registry_uri or None,
+            )
+            if tracker.start_run(run_name=f"evaluate_{version_id}"):
+                tracker.log_metrics({
+                    "rmse": scores["rmse"],
+                    "mae": scores["mae"],
+                    "r2": scores["r2"],
+                    "baseline_r2": scores.get("baseline_r2", 0),
+                })
+                if version_id:
+                    tracker.register_model_version(
+                        model_name=registry_config.mlflow_model_name,
+                        source="model",
+                    )
+                    registry = load_registry(registry_config.registry_path)
+                    prod_id = registry.get("production")
+                    if prod_id == version_id:
+                        tracker.transition_model_stage(
+                            model_name=registry_config.mlflow_model_name,
+                            version=version_id,
+                            stage="Production",
+                        )
+                    else:
+                        for v in registry.get("versions", []):
+                            if v.get("id") == version_id:
+                                status = v.get("status", "Staging")
+                                tracker.transition_model_stage(
+                                    model_name=registry_config.mlflow_model_name,
+                                    version=version_id,
+                                    stage=status.capitalize(),
+                                )
+                                break
+                tracker.end_run()
+                logger.info(f"Metrics logged to MLflow for version {version_id}")
+        except Exception as e:
+            logger.warning(f"Failed to log metrics to MLflow: {e}")
 
     def _load_model_info(self) -> dict:
         """Load model_info.json saved alongside the model by model_trainer."""

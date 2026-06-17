@@ -189,10 +189,37 @@ class ConfigurationManager:
             ENV_MODEL_REGISTRY_QUALITY_GATE_MAX_RMSE_DEGRADATION_PCT, "5.0", transform=float
         ))
 
+        registry_config = self.config.model_registry
+        use_mlflow = str(get_env_or_config(
+            ENV_MLFLOW_USE_MLFLOW,
+            str(registry_config.get("use_mlflow", False)),
+        )).lower() in ("1", "true", "yes")
+        mlflow_tracking_uri = get_env_or_config(
+            ENV_MLFLOW_TRACKING_URI,
+            registry_config.get("mlflow_tracking_uri", "./mlruns"),
+        )
+        mlflow_experiment_name = get_env_or_config(
+            ENV_MLFLOW_EXPERIMENT_NAME,
+            registry_config.get("mlflow_experiment_name", "wine_quality_prediction"),
+        )
+        mlflow_registry_uri = get_env_or_config(
+            ENV_MLFLOW_REGISTRY_URI,
+            registry_config.get("mlflow_registry_uri", ""),
+        )
+        mlflow_model_name = get_env_or_config(
+            ENV_MLFLOW_MODEL_NAME,
+            registry_config.get("mlflow_model_name", "WineQualityElasticNet"),
+        )
+
         return ModelRegistryConfig(
             registry_path=Path(registry_path),
             production_alias=production_alias,
             staging_alias=staging_alias,
             max_versions_to_keep=max_versions_to_keep,
             quality_gate_max_rmse_degradation_pct=quality_gate_max_rmse_degradation_pct,
+            use_mlflow=use_mlflow,
+            mlflow_tracking_uri=mlflow_tracking_uri,
+            mlflow_experiment_name=mlflow_experiment_name,
+            mlflow_registry_uri=mlflow_registry_uri,
+            mlflow_model_name=mlflow_model_name,
         )
