@@ -89,9 +89,12 @@ class DataValidator:
                 logger.warning(f"Failed to load reference data: {e}")
                 reference_data = None
         else:
-            logger.info(f"Reference data not found at {reference_data_path}. Saving current data as reference for future runs.")
-            data.to_csv(reference_data_path, index=False)
-            logger.info(f"Created reference data snapshot at {reference_data_path}")
+            if schema_valid:
+                logger.info(f"Reference data not found at {reference_data_path}. Saving current data as reference for future runs.")
+                data.to_csv(reference_data_path, index=False)
+                logger.info(f"Created reference data snapshot at {reference_data_path}")
+            else:
+                logger.warning(f"Skipping reference data save — schema validation failed. Errors: {schema_errors}")
             reference_data = None
 
         if reference_data is not None:
