@@ -654,56 +654,57 @@ def analytics_export_pdf():
         return jsonify({"error": str(e)}), 500
 
 
+# Validation rules per feature: (form field, display label, bound).
+# "positive" -> value > 0, "non_negative" -> value >= 0, "ph" -> 0 < value < 14.
+_FEATURE_RULES = [
+    ("fixed_acidity", "Fixed Acidity", "positive"),
+    ("volatile_acidity", "Volatile Acidity", "positive"),
+    ("citric_acid", "Citric Acid", "non_negative"),
+    ("residual_sugar", "Residual Sugar", "positive"),
+    ("chlorides", "Chlorides", "non_negative"),
+    ("free_sulfur_dioxide", "Free Sulfur Dioxide", "non_negative"),
+    ("total_sulfur_dioxide", "Total Sulfur Dioxide", "non_negative"),
+    ("density", "Density", "positive"),
+    ("pH", "pH", "ph"),
+    ("sulphates", "Sulphates", "non_negative"),
+    ("alcohol", "Alcohol", "positive"),
+]
+
+_PREDICT_FIELDS = [field for field, _, _ in _FEATURE_RULES]
+
+
+def _validate_wine_features(raw):
+    """Coerce the 11 wine features to floats and enforce input-domain bounds.
+
+    Shared by the HTML form (/predict) and the JSON API (/api/predict) so both
+    accept the same range of inputs. Returns the values ordered to match
+    NUMERIC_FEATURES; raises ValueError with a readable message on the first
+    invalid field.
+    """
+    values = []
+    for field, label, rule in _FEATURE_RULES:
+        try:
+            value = float(raw.get(field))
+        except (TypeError, ValueError):
+            raise ValueError(f"{label} must be a number.")
+        if rule == "positive" and value <= 0:
+            raise ValueError(f"{label} must be positive.")
+        if rule == "non_negative" and value < 0:
+            raise ValueError(f"{label} must be non-negative.")
+        if rule == "ph" and not (0 < value < 14):
+            raise ValueError("pH must be between 0 and 14.")
+        values.append(value)
+    return values
+
+
 @app.route("/predict", methods=["POST", "GET"])
 @limiter.limit("30 per minute")
 def index():
     if request.method == "POST":
         try:
-            fixed_acidity        = float(request.form["fixed_acidity"])
-            volatile_acidity     = float(request.form["volatile_acidity"])
-            citric_acid          = float(request.form["citric_acid"])
-            residual_sugar       = float(request.form["residual_sugar"])
-            chlorides            = float(request.form["chlorides"])
-            free_sulfur_dioxide  = float(request.form["free_sulfur_dioxide"])
-            total_sulfur_dioxide = float(request.form["total_sulfur_dioxide"])
-            density              = float(request.form["density"])
-            pH                   = float(request.form["pH"])
-            sulphates            = float(request.form["sulphates"])
-            alcohol              = float(request.form["alcohol"])
+            values = _validate_wine_features(request.form)
 
-            # Boundary validation checks
-            if fixed_acidity <= 0:
-                raise ValueError("Fixed Acidity must be positive.")
-            if volatile_acidity <= 0:
-                raise ValueError("Volatile Acidity must be positive.")
-            if citric_acid < 0:
-                raise ValueError("Citric Acid must be non-negative.")
-            if residual_sugar <= 0:
-                raise ValueError("Residual Sugar must be positive.")
-            if chlorides < 0:
-                raise ValueError("Chlorides must be non-negative.")
-            if free_sulfur_dioxide < 0:
-                raise ValueError("Free Sulfur Dioxide must be non-negative.")
-            if total_sulfur_dioxide < 0:
-                raise ValueError("Total Sulfur Dioxide must be non-negative.")
-            if density <= 0:
-                raise ValueError("Density must be positive.")
-            if not (0 < pH < 14):
-                raise ValueError("pH must be between 0 and 14.")
-            if sulphates < 0:
-                raise ValueError("Sulphates must be non-negative.")
-            if alcohol <= 0:
-                raise ValueError("Alcohol must be positive.")
-
-            data = pd.DataFrame([[
-                fixed_acidity, volatile_acidity, citric_acid, residual_sugar,
-                chlorides, free_sulfur_dioxide, total_sulfur_dioxide,
-                density, pH, sulphates, alcohol,
-            ]], columns=[
-                "fixed acidity", "volatile acidity", "citric acid",
-                "residual sugar", "chlorides", "free sulfur dioxide",
-                "total sulfur dioxide", "density", "pH", "sulphates", "alcohol",
-            ])
+            data = pd.DataFrame([values], columns=NUMERIC_FEATURES)
 
             predict = pipeline.predict(data)
             final_prediction = round(float(predict[0]), 2)
@@ -711,19 +712,7 @@ def index():
             # Log prediction to local SQLite database for monitoring & drift
             try:
                 from mlProject.components.monitoring import PredictionLogger
-                features_dict = {
-                    "fixed acidity": fixed_acidity,
-                    "volatile acidity": volatile_acidity,
-                    "citric acid": citric_acid,
-                    "residual sugar": residual_sugar,
-                    "chlorides": chlorides,
-                    "free sulfur dioxide": free_sulfur_dioxide,
-                    "total sulfur dioxide": total_sulfur_dioxide,
-                    "density": density,
-                    "pH": pH,
-                    "sulphates": sulphates,
-                    "alcohol": alcohol
-                }
+                features_dict = dict(zip(NUMERIC_FEATURES, values))
                 PredictionLogger().log_prediction(features_dict, final_prediction)
                 # Automatically check for drift and run retraining if drift ratio >= 20%
                 try:
@@ -751,13 +740,6 @@ def index():
         return render_template("index.html")
 
 
-_PREDICT_FIELDS = [
-    "fixed_acidity", "volatile_acidity", "citric_acid", "residual_sugar",
-    "chlorides", "free_sulfur_dioxide", "total_sulfur_dioxide",
-    "density", "pH", "sulphates", "alcohol",
-]
-
-
 @app.route("/api/predict", methods=["POST"])
 @limiter.limit("30 per minute")
 def api_predict():
@@ -770,10 +752,10 @@ def api_predict():
         return jsonify({"error": "Missing fields", "fields": missing}), 422
 
     try:
-        values = [float(body[f]) for f in _PREDICT_FIELDS]
-    except (TypeError, ValueError) as exc:
+        values = _validate_wine_features(body)
+    except ValueError as exc:
         logger.error(f"Validation error in /api/predict: {exc}")
-        return jsonify({"error": "All fields must be numeric"}), 422
+        return jsonify({"error": str(exc)}), 422
 
     try:
         data = np.array(values).reshape(1, 11)
