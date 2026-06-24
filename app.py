@@ -1076,4 +1076,8 @@ if __name__ == "__main__":
     port = int(get_env_or_config(ENV_FLASK_PORT, "8080", transform=int))
     debug = os.environ.get("FLASK_DEBUG", "0") == "1"
 
+    # Gunicorn handles this via gunicorn.conf.py; the dev server must do it
+    # itself so a fresh clone trains a model before the first /predict.
+    ensure_model_trained()
+
     app.run(host="0.0.0.0", port=port, debug=debug)
