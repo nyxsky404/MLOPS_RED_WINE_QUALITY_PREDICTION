@@ -266,6 +266,11 @@ Metrics are automatically saved in `artifacts/model_evaluation/metrics.json`
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+
+Contributions are welcome!
+
+Please read the [CONTRIBUTING.md](CONTRIBUTING.md) file before submitting issues or pull requests.
+
 ## Contributors
 
 <!-- CONTRIBUTORS_START -->
