@@ -1,5 +1,9 @@
 # 🍷 Wine Quality Prediction MLOps
 
+![GitHub License](https://img.shields.io/github/license/Kallappa2005/MLOPS_RED_WINE_QUALITY_PREDICTION)
+![GitHub Stars](https://img.shields.io/github/stars/Kallappa2005/MLOPS_RED_WINE_QUALITY_PREDICTION)
+![GitHub Forks](https://img.shields.io/github/forks/Kallappa2005/MLOPS_RED_WINE_QUALITY_PREDICTION)
+![Python Version](https://img.shields.io/badge/python-3.8-blue)
 [![Live App](https://img.shields.io/badge/🚀%20Live%20App-wine--quality--predictor-brightgreen)](https://wine-quality-predictor-01.onrender.com/)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue)](https://github.com/Kallappa2005/MLOPS_RED_WINE_QUALITY_PREDICTION/actions)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-blue)](https://hub.docker.com/)
