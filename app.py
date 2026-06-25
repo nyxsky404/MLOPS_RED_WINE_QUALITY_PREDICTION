@@ -67,6 +67,8 @@ load_env_file()
 
 app = Flask(__name__)
 
+_api_logger = APILogger()
+
 # Request logging middleware for API Gateway Request Analytics
 @app.before_request
 def before_request():
@@ -79,14 +81,11 @@ def after_request(response):
     start_time = getattr(g, "start_time", None)
     if start_time:
         latency_ms = (time.time() - start_time) * 1000
-        try:
-            ip = request.remote_addr
-            endpoint = request.path
-            method = request.method
-            status_code = response.status_code
-            APILogger().log_request(endpoint, method, status_code, latency_ms, ip)
-        except Exception as e:
-            app.logger.error(f"Error logging request: {e}")
+        ip = request.remote_addr
+        endpoint = request.path
+        method = request.method
+        status_code = response.status_code
+        _api_logger.log_request(endpoint, method, status_code, latency_ms, ip)
     return response
 
 # Global pipeline instance — loaded once at startup to avoid per-request disk I/O
@@ -303,15 +302,14 @@ def validate_config_at_startup() -> None:
 def _run_training_in_background() -> None:
     """Subprocess-based training; releases _training_lock when done."""
     global is_training, _training_process
-        if not _acquire_training_file_lock():
-            is_training = False
-            with _log_lock:
-                training_log.append("Training rejected: another process is already training")
-            try:
-                _training_lock.release()
-            except RuntimeError:
-                pass
-            return
+    if not _acquire_training_file_lock():
+        with _log_lock:
+            training_log.append("Training rejected: another process is already training")
+        try:
+            _training_lock.release()
+        except RuntimeError:
+            pass
+        return
     start_time = time.time()
     _write_training_state(True, ["Training started..."], started_at=start_time)
     try:
